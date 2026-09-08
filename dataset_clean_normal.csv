@@ -1,0 +1,125 @@
+Date,Description,Category,Amount,Type
+2026-03-01,Monthly Salary,Income,45000,Income
+2026-03-01,Electricity,Bills,2407,Expense
+2026-03-02,Electricity,Bills,2947,Expense
+2026-03-03,Rent,Bills,2347,Expense
+2026-03-04,Zomato,Food,1427,Expense
+2026-03-04,Swiggy,Food,2030,Expense
+2026-03-06,Uber,Transport,2368,Expense
+2026-03-07,Mobile Bill,Bills,619,Expense
+2026-03-07,Uber,Transport,1352,Expense
+2026-03-08,Medicine,Healthcare,1114,Expense
+2026-03-08,Pharmacy,Healthcare,2910,Expense
+2026-03-10,Netflix,Entertainment,1110,Expense
+2026-03-10,Gaming,Entertainment,1300,Expense
+2026-03-11,Uber,Transport,393,Expense
+2026-03-11,Books,Education,2038,Expense
+2026-03-12,Course,Education,2716,Expense
+2026-03-14,Ola,Transport,2824,Expense
+2026-03-14,Amazon,Shopping,2477,Expense
+2026-03-15,Medicine,Healthcare,293,Expense
+2026-03-15,Hospital,Healthcare,961,Expense
+2026-03-17,Internet,Bills,1408,Expense
+2026-03-18,Internet,Bills,2404,Expense
+2026-03-19,Fuel,Transport,469,Expense
+2026-03-21,Mobile Bill,Bills,1445,Expense
+2026-03-22,Cafe,Food,227,Expense
+2026-03-23,Udemy,Education,2879,Expense
+2026-03-24,Ola,Transport,1543,Expense
+2026-03-25,Gaming,Entertainment,600,Expense
+2026-03-25,Spotify,Entertainment,2427,Expense
+2026-03-25,Metro,Transport,1762,Expense
+2026-03-27,Metro,Transport,1790,Expense
+2026-03-27,Rent,Bills,877,Expense
+2026-03-27,Gaming,Entertainment,236,Expense
+2026-03-28,Spotify,Entertainment,1175,Expense
+2026-03-29,Udemy,Education,865,Expense
+2026-03-29,Flipkart,Shopping,1913,Expense
+2026-03-31,Restaurant,Food,1324,Expense
+2026-04-01,Monthly Salary,Income,45000,Income
+2026-04-03,Netflix,Entertainment,1584,Expense
+2026-04-06,Udemy,Education,1624,Expense
+2026-04-06,Pharmacy,Healthcare,998,Expense
+2026-04-07,Gaming,Entertainment,1246,Expense
+2026-04-08,Restaurant,Food,1462,Expense
+2026-04-08,Medicine,Healthcare,2277,Expense
+2026-04-09,College Material,Education,1257,Expense
+2026-04-09,Netflix,Entertainment,615,Expense
+2026-04-10,College Material,Education,1731,Expense
+2026-04-11,Ola,Transport,1006,Expense
+2026-04-11,Amazon,Shopping,165,Expense
+2026-04-11,Uber,Transport,2938,Expense
+2026-04-12,Flipkart,Shopping,382,Expense
+2026-04-13,Mobile Bill,Bills,1032,Expense
+2026-04-13,Rent,Bills,1722,Expense
+2026-04-14,Uber,Transport,2380,Expense
+2026-04-14,Hospital,Healthcare,300,Expense
+2026-04-16,Course,Education,2781,Expense
+2026-04-16,Cafe,Food,2415,Expense
+2026-04-18,Medicine,Healthcare,2652,Expense
+2026-04-19,Ola,Transport,1477,Expense
+2026-04-20,Uber,Transport,982,Expense
+2026-04-22,Netflix,Entertainment,220,Expense
+2026-04-22,Cafe,Food,2819,Expense
+2026-04-23,Mobile Bill,Bills,655,Expense
+2026-04-23,Medicine,Healthcare,2618,Expense
+2026-04-23,Internet,Bills,333,Expense
+2026-04-25,Amazon,Shopping,1461,Expense
+2026-04-26,Fuel,Transport,555,Expense
+2026-04-28,Zomato,Food,2162,Expense
+2026-04-30,Netflix,Entertainment,440,Expense
+2026-05-01,Books,Education,1487,Expense
+2026-05-01,Monthly Salary,Income,45000,Income
+2026-05-03,Movie,Entertainment,1721,Expense
+2026-05-05,Course,Education,639,Expense
+2026-05-06,Restaurant,Food,1912,Expense
+2026-05-07,Internet,Bills,2582,Expense
+2026-05-08,Course,Education,2372,Expense
+2026-05-08,Fuel,Transport,903,Expense
+2026-05-08,Fuel,Transport,1645,Expense
+2026-05-09,Ola,Transport,1482,Expense
+2026-05-10,Pharmacy,Healthcare,1487,Expense
+2026-05-12,College Material,Education,1245,Expense
+2026-05-14,Course,Education,1078,Expense
+2026-05-16,Rent,Bills,526,Expense
+2026-05-17,Cafe,Food,2129,Expense
+2026-05-17,Udemy,Education,1839,Expense
+2026-05-21,Metro,Transport,302,Expense
+2026-05-21,Flipkart,Shopping,363,Expense
+2026-05-22,Spotify,Entertainment,1015,Expense
+2026-05-22,College Material,Education,2904,Expense
+2026-05-22,Amazon,Shopping,255,Expense
+2026-05-23,Restaurant,Food,1287,Expense
+2026-05-23,Swiggy,Food,403,Expense
+2026-05-25,Flipkart,Shopping,1924,Expense
+2026-05-26,Swiggy,Food,1951,Expense
+2026-05-27,Restaurant,Food,1984,Expense
+2026-05-28,Hospital,Healthcare,2825,Expense
+2026-05-31,Restaurant,Food,987,Expense
+2026-05-31,College Material,Education,1673,Expense
+2026-06-01,Ola,Transport,715,Expense
+2026-06-01,Monthly Salary,Income,45000,Income
+2026-06-01,Spotify,Entertainment,1029,Expense
+2026-06-01,Electricity,Bills,2614,Expense
+2026-06-02,Uber,Transport,2840,Expense
+2026-06-03,Zomato,Food,1260,Expense
+2026-06-03,Swiggy,Food,560,Expense
+2026-06-03,Flipkart,Shopping,1310,Expense
+2026-06-05,Ola,Transport,1199,Expense
+2026-06-08,Zomato,Food,1770,Expense
+2026-06-08,Hospital,Healthcare,1605,Expense
+2026-06-09,Cafe,Food,2089,Expense
+2026-06-09,Gaming,Entertainment,463,Expense
+2026-06-10,Local Store,Shopping,2666,Expense
+2026-06-12,Cafe,Food,1740,Expense
+2026-06-14,Fuel,Transport,1181,Expense
+2026-06-14,Hospital,Healthcare,2686,Expense
+2026-06-15,Mobile Bill,Bills,2596,Expense
+2026-06-15,Internet,Bills,953,Expense
+2026-06-17,Mobile Bill,Bills,2813,Expense
+2026-06-21,Cafe,Food,1332,Expense
+2026-06-21,Hospital,Healthcare,2712,Expense
+2026-06-21,Electricity,Bills,2408,Expense
+2026-06-21,Restaurant,Food,840,Expense
+2026-06-27,Pharmacy,Healthcare,2954,Expense
+2026-06-27,Zomato,Food,2476,Expense
