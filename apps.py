@@ -57,13 +57,13 @@ def connect_to_google_sheet():
     ]
 
     credentials = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
+        st.secrets["lwrembam-devraj@cloud-pc-502518.iam.gserviceaccount.com"],
         scopes=scopes
     )
 
     client = gspread.authorize(credentials)
 
-    sheet_id = st.secrets["google_sheet_id"]
+    sheet_id = st.secrets["1SM3bEgIOHrFxmAAcriN9b9BacnT4o7YUbBzOqpoDeUE"]
 
     spreadsheet = client.open_by_key(sheet_id)
 
