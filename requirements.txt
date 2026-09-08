@@ -3,3 +3,6 @@ pandas==3.0.5
 numpy==2.5.2
 scikit-learn==1.9.0
 plotly==6.9.0
+gspread
+google-auth
+gspread-dataframe
