@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import os
+import gspread
 
 from datetime import date
+from google.oauth2.service_account import Credentials
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
@@ -24,8 +25,6 @@ st.set_page_config(
 # CONSTANTS
 # ============================================================
 
-DATA_FILE = "expenses.csv"
-
 CATEGORIES = [
     "Food",
     "Transport",
@@ -37,137 +36,167 @@ CATEGORIES = [
     "Other"
 ]
 
-
-# ============================================================
-# CREATE SAMPLE DATA
-# ============================================================
-
-def create_sample_data():
-
-    np.random.seed(42)
-
-    dates = pd.date_range(
-        start="2026-01-01",
-        end="2026-08-15",
-        freq="D"
-    )
-
-    data = []
-
-    for d in dates:
-
-        # Random number of transactions per day
-        number_of_transactions = np.random.randint(0, 4)
-
-        for _ in range(number_of_transactions):
-
-            category = np.random.choice(
-                CATEGORIES,
-                p=[
-                    0.25,  # Food
-                    0.15,  # Transport
-                    0.15,  # Shopping
-                    0.10,  # Entertainment
-                    0.10,  # Education
-                    0.10,  # Bills
-                    0.05,  # Health
-                    0.10   # Other
-                ]
-            )
-
-            # Normal expense ranges
-            ranges = {
-                "Food": (80, 600),
-                "Transport": (50, 400),
-                "Shopping": (200, 2000),
-                "Entertainment": (100, 1000),
-                "Education": (200, 1500),
-                "Bills": (300, 3000),
-                "Health": (100, 2000),
-                "Other": (50, 1000)
-            }
-
-            low, high = ranges[category]
-
-            amount = round(
-                np.random.uniform(low, high),
-                2
-            )
-
-            data.append([
-                d.strftime("%Y-%m-%d"),
-                category,
-                amount,
-                f"{category} expense"
-            ])
-
-    df = pd.DataFrame(
-        data,
-        columns=[
-            "Date",
-            "Category",
-            "Amount",
-            "Description"
-        ]
-    )
-
-    # Add a few obvious anomalies
-    anomaly_data = pd.DataFrame([
-        ["2026-08-05", "Food", 2800, "Large restaurant bill"],
-        ["2026-08-08", "Shopping", 6500, "Unusual purchase"],
-        ["2026-08-10", "Transport", 2500, "Unusual travel expense"]
-    ], columns=df.columns)
-
-    df = pd.concat(
-        [df, anomaly_data],
-        ignore_index=True
-    )
-
-    return df
+SHEET_COLUMNS = [
+    "Date",
+    "Category",
+    "Amount",
+    "Description"
+]
 
 
 # ============================================================
-# LOAD DATA
+# GOOGLE SHEETS CONNECTION
+# ============================================================
+
+@st.cache_resource
+def connect_to_google_sheet():
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+
+    credentials = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scopes
+    )
+
+    client = gspread.authorize(credentials)
+
+    sheet_id = st.secrets["google_sheet_id"]
+
+    spreadsheet = client.open_by_key(sheet_id)
+
+    worksheet = spreadsheet.sheet1
+
+    return worksheet
+
+
+# ============================================================
+# LOAD DATA FROM GOOGLE SHEETS
 # ============================================================
 
 def load_data():
 
-    if not os.path.exists(DATA_FILE):
+    try:
 
-        df = create_sample_data()
+        worksheet = connect_to_google_sheet()
 
-        df.to_csv(
-            DATA_FILE,
-            index=False
+        records = worksheet.get_all_records()
+
+        if not records:
+
+            return pd.DataFrame(
+                columns=SHEET_COLUMNS
+            )
+
+        df = pd.DataFrame(records)
+
+        # Make sure required columns exist
+        for column in SHEET_COLUMNS:
+
+            if column not in df.columns:
+
+                df[column] = ""
+
+        df = df[SHEET_COLUMNS]
+
+        # Convert Date
+        df["Date"] = pd.to_datetime(
+            df["Date"],
+            errors="coerce"
         )
 
-    else:
+        # Convert Amount
+        df["Amount"] = pd.to_numeric(
+            df["Amount"],
+            errors="coerce"
+        )
 
-        df = pd.read_csv(DATA_FILE)
+        df = df.dropna(
+            subset=["Date", "Amount"]
+        )
 
-    df["Date"] = pd.to_datetime(df["Date"])
+        return df
 
-    df["Amount"] = pd.to_numeric(
-        df["Amount"],
-        errors="coerce"
-    )
+    except Exception as e:
 
-    df = df.dropna(
-        subset=["Date", "Amount"]
-    )
+        st.error(
+            f"❌ Could not connect to Google Sheets: {e}"
+        )
 
-    return df
+        return pd.DataFrame(
+            columns=SHEET_COLUMNS
+        )
 
 
 # ============================================================
-# SAVE DATA
+# SAVE DATA TO GOOGLE SHEETS
 # ============================================================
 
 def save_data(df):
 
-    df.to_csv(
-        DATA_FILE,
-        index=False
+    worksheet = connect_to_google_sheet()
+
+    # Make a copy so we don't modify the original dataframe
+    save_df = df.copy()
+
+    # Convert dates to strings
+    save_df["Date"] = pd.to_datetime(
+        save_df["Date"],
+        errors="coerce"
+    ).dt.strftime("%Y-%m-%d")
+
+    # Make sure correct column order
+    save_df = save_df[
+        SHEET_COLUMNS
+    ]
+
+    # Convert NaN to empty values
+    save_df = save_df.fillna("")
+
+    # Convert everything to string
+    values = save_df.astype(str).values.tolist()
+
+    # Clear existing worksheet
+    worksheet.clear()
+
+    # Header row
+    worksheet.update(
+        range_name="A1:D1",
+        values=[SHEET_COLUMNS]
+    )
+
+    # Write data
+    if values:
+
+        worksheet.update(
+            range_name=f"A2:D{len(values) + 1}",
+            values=values
+        )
+
+
+# ============================================================
+# ADD ROW TO GOOGLE SHEETS
+# ============================================================
+
+def add_expense_to_sheet(
+    expense_date,
+    category,
+    amount,
+    description
+):
+
+    worksheet = connect_to_google_sheet()
+
+    worksheet.append_row(
+        [
+            expense_date.strftime("%Y-%m-%d"),
+            category,
+            float(amount),
+            description
+        ],
+        value_input_option="USER_ENTERED"
     )
 
 
@@ -177,6 +206,15 @@ def save_data(df):
 
 def monthly_expenses(df):
 
+    if df.empty:
+
+        return pd.DataFrame(
+            columns=[
+                "Date",
+                "Amount"
+            ]
+        )
+
     monthly = (
         df.groupby(
             df["Date"].dt.to_period("M")
@@ -185,7 +223,10 @@ def monthly_expenses(df):
         .reset_index()
     )
 
-    monthly["Date"] = monthly["Date"].dt.to_timestamp()
+    monthly["Date"] = (
+        monthly["Date"]
+        .dt.to_timestamp()
+    )
 
     return monthly
 
@@ -229,7 +270,6 @@ def predict_next_month(df):
         next_month_number
     )[0]
 
-    # Prevent negative prediction
     prediction = max(
         0,
         prediction
@@ -246,13 +286,18 @@ def detect_anomalies(df):
 
     result = df.copy()
 
+    if result.empty:
+
+        result["Anomaly"] = []
+
+        return result
+
     if len(result) < 10:
 
         result["Anomaly"] = 1
 
         return result
 
-    # Features used by Isolation Forest
     result["DayOfWeek"] = (
         result["Date"].dt.dayofweek
     )
@@ -279,8 +324,8 @@ def detect_anomalies(df):
         random_state=42
     )
 
-    result["Anomaly"] = model.fit_predict(
-        features
+    result["Anomaly"] = (
+        model.fit_predict(features)
     )
 
     return result
@@ -294,7 +339,19 @@ def generate_recommendations(df):
 
     recommendations = []
 
+    if df.empty:
+
+        return [
+            "📊 Add some expenses to receive personalized recommendations."
+        ]
+
     total = df["Amount"].sum()
+
+    if total <= 0:
+
+        return [
+            "📊 Add valid expenses to receive recommendations."
+        ]
 
     category_spending = (
         df.groupby("Category")["Amount"]
@@ -352,7 +409,7 @@ def generate_recommendations(df):
                 "shopping budget."
             )
 
-    # Transport
+    # Transport recommendation
     if "Transport" in category_spending:
 
         transport = category_spending["Transport"]
@@ -364,7 +421,6 @@ def generate_recommendations(df):
                 "Consider public transport or combining trips."
             )
 
-    # General recommendation
     if len(recommendations) == 0:
 
         recommendations.append(
@@ -435,8 +491,7 @@ if page == "Dashboard":
         == current_month
     ]
 
-    # If current month has no data, use latest month
-    if len(current_month_data) == 0:
+    if len(current_month_data) == 0 and not df.empty:
 
         latest_month = (
             df["Date"]
@@ -470,14 +525,9 @@ if page == "Dashboard":
             category_spending.idxmax()
         )
 
-        highest_category_amount = (
-            category_spending.max()
-        )
-
     else:
 
         highest_category = "N/A"
-        highest_category_amount = 0
 
 
     # --------------------------------------------------------
@@ -514,9 +564,7 @@ if page == "Dashboard":
             highest_category
         )
 
-
     st.divider()
-
 
     # --------------------------------------------------------
     # MONTHLY SPENDING GRAPH
@@ -528,23 +576,31 @@ if page == "Dashboard":
 
     monthly = monthly_expenses(df)
 
-    fig = px.line(
-        monthly,
-        x="Date",
-        y="Amount",
-        markers=True,
-        title="Monthly Expense Trend"
-    )
+    if not monthly.empty:
 
-    fig.update_layout(
-        xaxis_title="Month",
-        yaxis_title="Amount (₹)"
-    )
+        fig = px.line(
+            monthly,
+            x="Date",
+            y="Amount",
+            markers=True,
+            title="Monthly Expense Trend"
+        )
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+        fig.update_layout(
+            xaxis_title="Month",
+            yaxis_title="Amount (₹)"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    else:
+
+        st.info(
+            "No expense data available yet."
+        )
 
 
     # --------------------------------------------------------
@@ -565,17 +621,25 @@ if page == "Dashboard":
             .reset_index()
         )
 
-        fig2 = px.pie(
-            category_df,
-            names="Category",
-            values="Amount",
-            hole=0.4
-        )
+        if not category_df.empty:
 
-        st.plotly_chart(
-            fig2,
-            use_container_width=True
-        )
+            fig2 = px.pie(
+                category_df,
+                names="Category",
+                values="Amount",
+                hole=0.4
+            )
+
+            st.plotly_chart(
+                fig2,
+                use_container_width=True
+            )
+
+        else:
+
+            st.info(
+                "No category data available."
+            )
 
 
     # --------------------------------------------------------
@@ -653,32 +717,26 @@ elif page == "Add Expense":
 
         if submitted:
 
-            new_expense = pd.DataFrame(
-                [
-                    {
-                        "Date": expense_date,
-                        "Category": category,
-                        "Amount": amount,
-                        "Description": description
-                    }
-                ]
-            )
+            try:
 
-            df = pd.concat(
-                [
-                    df,
-                    new_expense
-                ],
-                ignore_index=True
-            )
+                add_expense_to_sheet(
+                    expense_date,
+                    category,
+                    amount,
+                    description
+                )
 
-            save_data(df)
+                st.success(
+                    "✅ Expense added successfully to Google Sheets!"
+                )
 
-            st.success(
-                "✅ Expense added successfully!"
-            )
+                st.rerun()
 
-            st.rerun()
+            except Exception as e:
+
+                st.error(
+                    f"❌ Could not add expense: {e}"
+                )
 
 
 # ============================================================
@@ -692,7 +750,7 @@ elif page == "Import CSV":
     )
 
     st.write(
-        "Upload a CSV file containing your expenses."
+        "Upload a CSV file and add the transactions to Google Sheets."
     )
 
     st.info(
@@ -734,7 +792,8 @@ elif page == "Import CSV":
             else:
 
                 uploaded_df["Date"] = pd.to_datetime(
-                    uploaded_df["Date"]
+                    uploaded_df["Date"],
+                    errors="coerce"
                 )
 
                 uploaded_df["Amount"] = pd.to_numeric(
@@ -753,7 +812,12 @@ elif page == "Import CSV":
 
                     uploaded_df["Description"] = ""
 
-                df = pd.concat(
+                uploaded_df = uploaded_df[
+                    SHEET_COLUMNS
+                ]
+
+                # Add imported rows to existing data
+                combined_df = pd.concat(
                     [
                         df,
                         uploaded_df
@@ -761,10 +825,12 @@ elif page == "Import CSV":
                     ignore_index=True
                 )
 
-                save_data(df)
+                save_data(
+                    combined_df
+                )
 
                 st.success(
-                    f"✅ Imported {len(uploaded_df)} transactions."
+                    f"✅ Imported {len(uploaded_df)} transactions into Google Sheets."
                 )
 
                 st.dataframe(
@@ -772,10 +838,13 @@ elif page == "Import CSV":
                     use_container_width=True
                 )
 
+                # Refresh data
+                df = load_data()
+
         except Exception as e:
 
             st.error(
-                f"Error reading CSV: {e}"
+                f"❌ Error importing CSV: {e}"
             )
 
 
@@ -819,27 +888,29 @@ elif page == "AI Insights":
 
             last_month = monthly.iloc[-1]["Amount"]
 
-            difference = (
-                prediction - last_month
-            )
+            if last_month > 0:
 
-            percentage_change = (
-                difference / last_month
-            ) * 100
-
-            if percentage_change > 0:
-
-                st.warning(
-                    f"⚠️ Your spending may increase by "
-                    f"{percentage_change:.1f}% next month."
+                difference = (
+                    prediction - last_month
                 )
 
-            else:
+                percentage_change = (
+                    difference / last_month
+                ) * 100
 
-                st.success(
-                    f"✅ Your spending may decrease by "
-                    f"{abs(percentage_change):.1f}% next month."
-                )
+                if percentage_change > 0:
+
+                    st.warning(
+                        f"⚠️ Your spending may increase by "
+                        f"{percentage_change:.1f}% next month."
+                    )
+
+                else:
+
+                    st.success(
+                        f"✅ Your spending may decrease by "
+                        f"{abs(percentage_change):.1f}% next month."
+                    )
 
     else:
 
@@ -848,9 +919,7 @@ elif page == "AI Insights":
             "for prediction."
         )
 
-
     st.divider()
-
 
     # --------------------------------------------------------
     # RECOMMENDATIONS
@@ -870,9 +939,7 @@ elif page == "AI Insights":
             recommendation
         )
 
-
     st.divider()
-
 
     # --------------------------------------------------------
     # CATEGORY ANALYSIS
@@ -882,33 +949,41 @@ elif page == "AI Insights":
         "📊 Category Analysis"
     )
 
-    category_analysis = (
-        df.groupby("Category")["Amount"]
-        .agg(
-            [
-                "sum",
-                "mean",
-                "count"
-            ]
+    if not df.empty:
+
+        category_analysis = (
+            df.groupby("Category")["Amount"]
+            .agg(
+                [
+                    "sum",
+                    "mean",
+                    "count"
+                ]
+            )
+            .reset_index()
         )
-        .reset_index()
-    )
 
-    category_analysis.columns = [
-        "Category",
-        "Total Spending",
-        "Average Expense",
-        "Transactions"
-    ]
-
-    st.dataframe(
-        category_analysis.sort_values(
+        category_analysis.columns = [
+            "Category",
             "Total Spending",
-            ascending=False
-        ),
-        use_container_width=True,
-        hide_index=True
-    )
+            "Average Expense",
+            "Transactions"
+        ]
+
+        st.dataframe(
+            category_analysis.sort_values(
+                "Total Spending",
+                ascending=False
+            ),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    else:
+
+        st.info(
+            "No expense data available."
+        )
 
 
 # ============================================================
@@ -936,10 +1011,6 @@ elif page == "Anomaly Detection":
         result["Anomaly"] == -1
     ]
 
-    normal = result[
-        result["Anomaly"] == 1
-    ]
-
     col1, col2 = st.columns(2)
 
     with col1:
@@ -956,9 +1027,7 @@ elif page == "Anomaly Detection":
             len(anomalies)
         )
 
-
     st.divider()
-
 
     if len(anomalies) > 0:
 
@@ -1023,5 +1092,5 @@ st.sidebar.caption(
 )
 
 st.sidebar.caption(
-    "Built with Python + Streamlit + Machine Learning"
+    "Built with Python + Streamlit + Google Sheets + Machine Learning"
 )
